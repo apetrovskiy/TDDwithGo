@@ -50,11 +50,37 @@ func TestVersionDeterminesSize(t *testing.T) {
 	}
 
 	for _, test := range table {
-		buffer := new(bytes.Buffer)
-		GenerateQRCode(buffer, "555-2368", Version(test.version))
-		img, _ := png.Decode(buffer)
-		if width := img.Bounds().Dx(); width != test.expected {
-			t.Errorf("Version %2d, expected %3d but got %3d", test.version, test.expected, width)
+		size := Version(test.version).PatternSize()
+		if size != test.expected {
+			t.Errorf("Version %2d, expected %3d but got %3d",
+				test.version, test.expected, size)
 		}
+	}
+}
+
+func TestGenerateQRCode(t *testing.T) {
+	type args struct {
+		code    string
+		version Version
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantW   string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := &bytes.Buffer{}
+			if err := GenerateQRCode(w, tt.args.code, tt.args.version); (err != nil) != tt.wantErr {
+				t.Errorf("GenerateQRCode() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotW := w.String(); gotW != tt.wantW {
+				t.Errorf("GenerateQRCode() = %v, want %v", gotW, tt.wantW)
+			}
+		})
 	}
 }
