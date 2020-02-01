@@ -28,5 +28,5 @@ jobs:
       run: go build -v .
     
     - name: Test
-      run: go test
+      run: find . -type d -exec echo "go test" \;
     
