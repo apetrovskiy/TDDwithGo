@@ -30,3 +30,85 @@ jobs:
     - name: Test
       run: find . -type d -exec echo "go test" \;
     
+  golang:
+    runs-on: ubuntu-latest
+    # build is an old task, be watching it ...
+    needs: build
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./.github/actions/allure-prep
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      if: always()
+      with:
+        go-version: 1.16
+
+    - name: Build
+      if: always()
+      run: |
+        go get github.com/onsi/ginkgo/ginkgo
+        go get github.com/onsi/gomega/...
+        go get -u github.com/dailymotion/allure-go
+        export ALLURE_RESULTS_PATH=allure-results
+        GCO_ENABLED=0
+        go mod vendor
+        echo "GOPATH"
+        echo $GOPATH
+        echo "GOROOT"
+        echo $GOROOT
+        go build -v ./...
+    - name: Test
+      if: always()
+      run: go test -v ./...
+
+    - name: Look at Allure
+      if: always()
+      uses: ./.github/actions/allure-show
+
+    # TODO: de-duplicate
+    - name: Archive Allure results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: allure-results
+        path: allure-results
+
+  allure:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: golang
+    steps:
+
+    - name: Download all workflow run artifacts
+      uses: actions/download-artifact@v2
+
+    - name: Get Allure history
+      uses: actions/checkout@v2
+      if: always()
+      continue-on-error: true
+      with:
+        ref: gh-pages
+        path: gh-pages
+
+    - name: Allure Report with history
+      uses: simple-elf/allure-report-action@v1.5
+      if: always()
+
+    - name: Allure Report action from marketplace
+      uses: simple-elf/allure-report-action@master
+      if: always()
+      #id: allure-report
+      with:
+        allure_results: allure-results
+        gh_pages: gh-pages
+        allure_report: allure-report
+        allure_history: allure-history
+        keep_reports: 50
+
+    - name: Deploy report to Github Pages
+      if: always()
+      uses: peaceiris/actions-gh-pages@v2
+      env:
+        PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PUBLISH_BRANCH: gh-pages
+        PUBLISH_DIR: allure-history
