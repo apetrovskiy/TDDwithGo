@@ -3,22 +3,29 @@ package main
 import (
 	"bytes"
 	"errors"
+	"github.com/dailymotion/allure-go"
+	"github.com/joho/godotenv"
 	"image/png"
+	"log"
+	"os"
 	"testing"
 )
 
 func TestGenerateQRCodeGeneratesPNG(t *testing.T) {
-	buffer := new(bytes.Buffer)
-	GenerateQRCode(buffer, "555-2368", Version(1))
+	dotenv := goDotEnvVariable("ALLURE_RESULTS_PATH")
+	allure.Test(t, allure.Action(func() {
+		buffer := new(bytes.Buffer)
+		GenerateQRCode(buffer, "555-2368", Version(1))
 
-	if buffer.Len() == 0 {
-		t.Errorf("No QRCode generated")
-	}
-	_, err := png.Decode(buffer)
+		if buffer.Len() == 0 {
+			t.Errorf("No QRCode generated")
+		}
+		_, err := png.Decode(buffer)
 
-	if err != nil {
-		t.Errorf("Generated QRCode is not a PNG: %s", err)
-	}
+		if err != nil {
+			t.Errorf("Generated QRCode is not a PNG: %s", err)
+		}
+	}))
 }
 
 type ErrorWriter struct{}
@@ -83,4 +90,19 @@ func TestGenerateQRCode(t *testing.T) {
 			}
 		})
 	}
+}
+
+// https://towardsdatascience.com/use-environment-variable-in-your-next-golang-project-39e17c3aaa66
+// use godot package to load/read the .env file and
+// return the value of the key
+func goDotEnvVariable(key string) string {
+
+	// load .env file
+	err := godotenv.Load("variables.env")
+
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	return os.Getenv(key)
 }
